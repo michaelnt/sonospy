@@ -8,6 +8,17 @@ for Sonos ZonePlayers and the content they can serve/render.
 
 It can be run in proxy only mode (no GUI).
 
+Control Point QuickStart
+------------------------
+git clone https://github.com/henkelis/sonospy.git
+virtualenv py
+. py/bin/activate
+pip install web2py
+cd controller
+w2p_apps
+cd ..
+./sonospy_web
+
 Dependencies in this order (links correct at time of writing):
 --------------------------------------------------------------
 You will need to download the following dependencies. Installation instructions for them
@@ -28,6 +39,9 @@ To transcode file types on-the-fly that Sonos doesn't support
     sox (for downsampling FLAC)
     parec (to send PC output to ZP)
 
+web2py, if running the control point with a web interface, rather than just as a proxy server:
+    (All platforms: http://www.web2py.com/examples/default/download)
+
 Packages bundled with sonospy:
 ------------------------------
 The following packages are bundled with sonospy (no need to download/install):
@@ -41,9 +55,6 @@ python-brisa:
     python-brisa Qt Reactor 0.10.0
         (All platforms: http://brisa.garage.maemo.org/installation.html)
 
-web2py (only needed if running the control point with a GUI (rather than just as a proxy server)):
-    web2py 1.76.3+
-        (All platforms: http://www.web2py.com/examples/default/download)
 
 Installation of pycpoint:
 -------------------------
