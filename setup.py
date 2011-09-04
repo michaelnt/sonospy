@@ -8,4 +8,5 @@ setup(
     packages = ["sonospy", "brisa", "cherrypy"],
     package_dir = {'':"src"},
     install_requires = ["web2py"],
+    test_suite = "sonospy.tests",
     )

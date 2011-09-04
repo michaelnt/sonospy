@@ -49,10 +49,17 @@ enc = sys.getfilesystemencoding()
 
 MULTI_SEPARATOR = '\n'
 
+class ProxyError(Exception):
+    """
+    Proxy Error
+    """
+
 class Proxy(object):
 
     def __init__(self, proxyname, proxytype, proxytrans, udn, config, port, 
-                 mediaserver=None, controlpoint=None, createwebserver=False, webserverurl=None, wmpurl=None, startwmp=False, dbname=None, wmpudn=None, wmpcontroller=None, wmpcontroller2=None):
+                 mediaserver=None, controlpoint=None, createwebserver=False, 
+                 webserverurl=None, wmpurl=None, startwmp=False, dbname=None, 
+                 wmpudn=None, wmpcontroller=None, wmpcontroller2=None):
         '''
         To proxy an external mediaserver, set:
             port = the port to listen on for proxy control messages
@@ -137,7 +144,7 @@ class Proxy(object):
         error = None
         if self.dbspec != None:
             if not os.access(self.dbspec, os.R_OK):
-                error = "Unable to access database file"
+                raise ProxyError("Unable to access database file")
             else:
                 try:
                     db = sqlite3.connect(self.dbspec, check_same_thread = False)
@@ -148,18 +155,13 @@ class Proxy(object):
                     log.debug('cache_size after: %s', cs.fetchone()[0])
                     cs.close()
                     c = db.cursor()
+                    c.execute("select count(*) from tracks")
+                    count, = c.fetchone()
+                    if count == 0:
+                        raise ProxyError("Database is empty")
                 except sqlite3.Error, e:
-                    error = "Unable to open database (%s)" % e.args[0]
-                else:
-                    try:
-                        c.execute("select count(*) from tracks")
-                        count, = c.fetchone()
-                        if count == 0:
-                            error = "Database is empty"
-                    except sqlite3.Error, e:
-                        error = "Unable to read track table (%s)" % e.args[0]
-        if error:
-            raise ValueError(error)
+                    raise ProxyError("Problem with db %s (%s)" % (self.dbspec, e.args[0]))
+
         if self.db_persist_connection:
             self.db = db
         else:
