@@ -40,6 +40,7 @@ import os
 import subprocess
 import guiFunctions
 from wx.lib.pubsub import Publisher
+import sonospy
 
 list_checkboxID = []
 list_checkboxLabel = []

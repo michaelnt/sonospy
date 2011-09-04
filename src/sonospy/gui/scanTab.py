@@ -34,6 +34,7 @@ from threading import *
 import guiFunctions
 from datetime import datetime
 from wx.lib.pubsub import Publisher
+import sonospy
 
 # Define notification event for thread completion
 EVT_RESULT_ID = wx.NewId()
@@ -244,6 +245,16 @@ class ScanPanel(wx.Panel):
         self.worker = None
 #        guiFunctions.statusText(self, "")
 
+    def _cmdroot(self):
+        """
+        Return the start of the scan command depending on the os
+        """
+        if os.name == 'nt':
+            cmdroot = 'python '
+        else:
+            cmdroot = ''
+        return os.path.join(cmdroot, os.path.dirname(sonospy.__file__))
+
     def bt_ScanRepairClick(self, event):
         global scanCMD
         global startTime
@@ -255,10 +266,6 @@ class ScanPanel(wx.Panel):
         getOpts = ""
         iniOverride = ""
 
-        if os.name == 'nt':
-            cmdroot = 'python '
-        else:
-            cmdroot = './'
 
         self.LogWindow.Enable()
         if self.tc_MainDatabase.Value == "":
@@ -270,7 +277,7 @@ class ScanPanel(wx.Panel):
 ##                iniOverride = ""
 #                iniOverride = "-i " + self.tc_INI.Value
 
-            scanCMD = cmdroot + "scan.py " + getOpts +"-d " + self.tc_MainDatabase.Value + " -r"
+            scanCMD = self._cmdroot() + "/scan.py " + getOpts +"-d " + self.tc_MainDatabase.Value + " -r"
             startTime = datetime.now()
             self.LogWindow.AppendText("[ Starting Repair ] (" + startTime.strftime("%T") + ")\n\n")
             guiFunctions.statusText(self, "[ Repair Started ]")
@@ -386,11 +393,6 @@ class ScanPanel(wx.Panel):
             wx.SetCursor(wx.StockCursor(wx.CURSOR_WATCH))
 
     def bt_ScanUpdateClick(self, event):
-        if os.name == 'nt':
-            cmdroot = 'python '
-        else:
-            cmdroot = './'
-
         self.LogWindow.Enable()
 
         if self.tc_MainDatabase.Value == "":
@@ -411,7 +413,7 @@ class ScanPanel(wx.Panel):
             global scanCMD
             global startTime
 
-            scanCMD = cmdroot + "scan.py " + getOpts +"-d " + self.tc_MainDatabase.Value + iniOverride + " "
+            scanCMD = self._cmdroot() + "/scan.py " + getOpts +"-d " + self.tc_MainDatabase.Value + iniOverride + " "
 
             numLines=0
             maxLines=(int(self.multiText.GetNumberOfLines()))

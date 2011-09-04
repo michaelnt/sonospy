@@ -3,6 +3,7 @@
 import os
 import sys
 import subprocess
+import sonospy
 
 helptext = """
     A python script to simplify command line database extractions -- good for
@@ -70,9 +71,10 @@ def main():
     if os.name == 'nt':
         cmdroot = 'python '
     else:
-        cmdroot = './'
+        cmdroot = ''
+    cmdroot =  os.path.join(cmdroot, os.path.dirname(sonospy.__file__))
 
-    scanCMD = cmdroot + "scan.py " + "-d " + sys.argv[1] + " -x " + sys.argv[2] + " -w " + searchCMD
+    scanCMD = cmdroot + "/scan.py " + "-d " + sys.argv[1] + " -x " + sys.argv[2] + " -w " + searchCMD
 
     sub = subprocess.Popen([scanCMD], shell=True).wait()
     return sub

@@ -43,6 +43,7 @@ import guiFunctions
 from datetime import datetime
 # import sqlite3
 from wx.lib.pubsub import Publisher
+import sonospy
 
 EVT_RESULT_ID = wx.NewId()
 
@@ -508,6 +509,16 @@ class ExtractPanel(wx.Panel):
             Publisher().sendMessage(('setVirtualPanel'), "Disable")
             wx.SetCursor(wx.StockCursor(wx.CURSOR_WATCH))
 
+    def _cmdroot(self):
+        """
+        Return the start of the scan command depending on the os
+        """
+        if os.name == 'nt':
+            cmdroot = 'python '
+        else:
+            cmdroot = ''
+        return os.path.join(cmdroot, os.path.dirname(sonospy.__file__))
+
     def bt_ExtractClick(self, event):
         global scanCMD
         global getOpts
@@ -612,7 +623,7 @@ class ExtractPanel(wx.Panel):
                 if self.ck_ExtractVerbose.Value == True:
                     getOpts = "-v "
 
-                scanCMD = cmdroot + "scan.py " + getOpts +"-d " + self.tc_MainDatabase.Value + " -x " + self.tc_TargetDatabase.Value + " -w " + searchCMD
+                scanCMD = self._cmdroot() + "/scan.py " + getOpts +"-d " + self.tc_MainDatabase.Value + " -x " + self.tc_TargetDatabase.Value + " -w " + searchCMD
                 startTime = datetime.now()
                 self.LogWindow.AppendText("[ Starting Extract ] (" + startTime.strftime("%T") + ")\n")
                 self.LogWindow.AppendText("Extracting from " + self.tc_MainDatabase.Value +" into " + self.tc_TargetDatabase.Value + "\n")

@@ -32,21 +32,12 @@ import os
 import sys
 import subprocess
 from wx.lib.pubsub import Publisher
-################################################################################
-# This is to house sonospyGUI.py in the root with the rest of the sonospy 
-# 'executables'.
-cmd_folder = os.path.dirname(os.path.abspath(__file__))
-cmd_folder = os.path.join(cmd_folder, "sonospy", "gui")
-if cmd_folder not in sys.path:
-    sys.path.insert(0, cmd_folder)
-import scanTab
-import extractTab
-import launchTab
-import virtualsTab
-# import nowPlayingTab
 
-# set our working directory for the rest of the functions to work right.
-os.chdir(cmd_folder)
+from sonospy.gui import scanTab
+from sonospy.gui import extractTab
+from sonospy.gui import launchTab
+from sonospy.gui import virtualsTab
+
 ################################################################################
 class SonospyNotebook(wx.Notebook):
     """
@@ -99,7 +90,8 @@ class SonospyFrame(wx.Frame):
         sizer.Add(notebook, 1, wx.ALL|wx.EXPAND, 5)
         panel.SetSizer(sizer)
         ib = wx.IconBundle()
-        ib.AddIconFromFile("sonospy.png", wx.BITMAP_TYPE_PNG)
+        guidir = os.path.dirname(scanTab.__file__)
+        ib.AddIconFromFile(guidir + "/sonospy.png", wx.BITMAP_TYPE_PNG)
         self.SetIcons(ib)
         self.CreateStatusBar(style=0)
         self.SetStatusText("Welcome to Sonospy...")
