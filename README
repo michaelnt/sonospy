@@ -123,7 +123,7 @@ To start the UPnP controlpoint as a proxy only, run:
         -- todo --
         -- for now use the following --
         
-        cd sonospy
+        cd src/sonospy
         pythonw pycpoint.py -p <parameters>
     
 from the directory you installed the source into.
@@ -178,10 +178,10 @@ Example calls:
         -- todo --
         -- for now use the following --
         
-        cd sonospy
+        cd src/sonospy
         pythonw pycpoint.py -p -wTwonky=Twonky
 
-        cd sonospy
+        cd src/sonospy
         pythonw pycpoint.py -p -wSonospy=music,sonos.sqlite
 
 You can also use the parameters above with the web browser, so for example to start the control 
@@ -196,9 +196,9 @@ point with Twonky proxied and available to both the web browser and Sonos contro
         -- todo --
         -- for now use the following --
         
-        cd sonospy
+        cd src\sonospy
         pythonw pycpoint.py -p -wTwonky=Twonky
-        cd ..
+        cd ..\..\
         pythonw web2py/web2py.py -L options.py
 
 When running as a proxy only you will need a separate control point (e.g. the Sonos controller)

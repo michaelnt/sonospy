@@ -17,7 +17,7 @@ __all__ = ('Resource', 'CustomResource', 'WebServer', 'StaticFile', 'adapters',
            'get_available_adapters', 'AdapterInterface', 'CherrypyAdapter',
            'PasteAdapter', 'CircuitsWebAdapter')
 
-import transcode
+import sonospy.transcode as transcode
 
 import os
 import random
