@@ -7,6 +7,6 @@ setup(
     author = "",
     packages = ["sonospy", "brisa", "cherrypy"],
     package_dir = {'':"src"},
-    install_requires = ["web2py"],
+    install_requires = ["python-dateutil", "circuits"],
     test_suite = "sonospy.tests",
     )
