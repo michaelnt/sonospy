@@ -212,7 +212,7 @@ if __name__ == "__main__":
 #    web.start()
     raw_input("Press ENTER to continue")
     web = CircuitsWebAdapter()
-    web.setup('192.168.0.3', 7000, web.application)
+    web.setup('0.0.0.0', 7000, web.application)
     web.start()
     raw_input("Press ENTER to exit")
     
