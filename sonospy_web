@@ -5,6 +5,6 @@ cd sonospy
 python pycpoint.py $1 $2 $3 $4 $5 $6 $7 $8 >../pycpoint.log 2>&1 &
 echo $! >../pycpoint.pid
 
-cd ../../
-python controller/web2py.py -L options.py > web2py.log 2>&1 &
+cd ../
+python web2py/web2py.py -L controller.options -f ../controller -N -a "<recycle>" > web2py.log 2>&1 &
 echo $! >web2py.pid

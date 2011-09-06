@@ -11,12 +11,7 @@ It can be run in proxy only mode (no GUI).
 Control Point QuickStart
 ------------------------
 git clone https://github.com/henkelis/sonospy.git
-virtualenv py
-. py/bin/activate
-pip install web2py
-cd controller
-w2p_apps
-cd ..
+wget http://www.web2py.com/examples/static/web2py_src.zip
 ./sonospy_web
 
 Dependencies in this order (links correct at time of writing):
