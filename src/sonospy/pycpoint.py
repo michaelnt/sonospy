@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # pycpoint
 #
@@ -81,7 +81,9 @@ import ConfigParser
 import StringIO
 import codecs
 
-from data import ListDataController, GetDataController, PlayController, GetDeviceController, SetRendererController, PollRendererController, ActionRendererController, PollServerController, PollQueueController
+from data import (ListDataController, GetDataController, PlayController, \
+                      GetDeviceController, SetRendererController, PollRendererController,\
+                      ActionRendererController, PollServerController, PollQueueController)
 
 #import log
 from brisa.core import log
@@ -135,13 +137,16 @@ from brisa.upnp.soap import HTTPTransport, HTTPError, parse_soap_call, parse_soa
 
 from optparse import OptionParser
 
-from brisa import url_fetch_attempts, url_fetch_attempts_interval, __skip_service_xml__, __skip_soap_service__, __tolerate_service_parse_failure__, __enable_logging__, __enable_webserver_logging__, __enable_offline_mode__, __enable_events_logging__
+from brisa import (url_fetch_attempts, url_fetch_attempts_interval, __skip_service_xml__,\
+                       __skip_soap_service__, __tolerate_service_parse_failure__, \
+                       __enable_logging__, __enable_webserver_logging__, \
+                       __enable_offline_mode__, __enable_events_logging__)
 
 ###############################################################################
 # ControlPointWeb class
 ###############################################################################
 
-class ControlPointWeb(object):
+class ControlPointWebState(object):
 
     ###########################################################################
     # class vars
@@ -229,7 +234,6 @@ class ControlPointWeb(object):
     msrootids = {}
     
     proxies = []
-    upnpproxy = []
     wmpproxy = []
     wmpfound = False
     sonospyproxies = {}
@@ -483,131 +487,82 @@ Music/Rating                101     object.container
 #Search("0", upnp:class = "object.container.album.musicAlbum" and upnp:artist = "Artist 1", "", "*", 0, 10, "")
 #Browse(RESULT, "BrowseDirectChildren", "", 0, 10, "")
 
-    ###########################################################################
-    # command line parser
-    ###########################################################################
 
-    usage = "usage: %prog [options] arg"
-    parser = OptionParser(usage)
-    
-    parser.add_option("-m", "--module", action="append", type="string", dest="modcheckmods")
-    parser.add_option("-d", "--debug", action="store_true", dest="debug")
-    parser.add_option("-q", "--quiet", action="store_true", dest="quiet")
-    parser.add_option("-n", "--nogui", action="store_true", dest="nogui")
-    parser.add_option("-p", "--proxyonly", action="store_true", dest="proxyonly")
-    parser.add_option("-u", "--upnpproxy", action="append", type="string", dest="upnpproxies")
-    parser.add_option("-w", "--wmpproxy", action="append", type="string", dest="wmpproxies")
+class ControlPointWeb(ControlPointWebState):
+    def __init__(self, options, inifile='pycpoint.ini'):
+        ###########################################################################
+        # command line parser
+        ###########################################################################
+        self.options = options
 
-    (options, args) = parser.parse_args()
+        self.__enable_webserver_logging__ = True
+        self.__enable_events_logging__ = True
 
-    print "Args:"
-    if options.debug:
-        print "option.debug: " + str(options.debug)
-        modcheck['all'] = True
-    if options.quiet:
-        print "option.quiet: " + str(options.quiet)
-    if options.modcheckmods:
-        for m in options.modcheckmods:
-            print "    module: " + str(m)
-            modcheck[m] = True
-    if options.nogui:
-        print "option.nogui: " + str(options.nogui)
-    if options.proxyonly:
-        print "option.proxyonly: " + str(options.proxyonly)
-    if options.upnpproxies:
-        for u in options.upnpproxies:
-            print "    UPnP proxy: " + str(u)
-            upnpproxy.append(u)
-    if options.wmpproxies:
-        for w in options.wmpproxies:
-            print "    WMP proxy: " + str(w)
-            wmpproxy.append(w)
+        ###########################################################################
+        # ini parser
+        ###########################################################################
 
-    __enable_webserver_logging__ = True
-    __enable_events_logging__ = True
-
-    ###########################################################################
-    # ini parser
-    ###########################################################################
-
-    config = ConfigParser.ConfigParser()
-    config.optionxform = str
-#    config.read('pycpoint.ini')
-    ini = ''
-    f = codecs.open('pycpoint.ini', encoding=fenc)
-    for line in f:
-        ini += line
-    config.readfp(StringIO.StringIO(ini))
+        self.config = ConfigParser.ConfigParser()
+        self.config.optionxform = str
+    #    config.read('pycpoint.ini')
+        ini = ''
+        f = codecs.open(inifile, encoding=fenc)
+        for line in f:
+            ini += line
+        self.config.readfp(StringIO.StringIO(ini))
 
 
-    # IP volume ini vars
+        # IP volume ini vars
 
-    VOLUME_UP     = 'Volume Up'
-    VOLUME_DOWN   = 'Volume Down'
-    VOLUME_MUTE   = 'Volume Mute'
-    VOLUME_UNMUTE = 'Volume UnMute'
+        self.VOLUME_UP     = 'Volume Up'
+        self.VOLUME_DOWN   = 'Volume Down'
+        self.VOLUME_MUTE   = 'Volume Mute'
+        self.VOLUME_UNMUTE = 'Volume UnMute'
 
-    rooms_volumes = {}
-    rooms = []
-    ir_ip = ''
-    ir_port = 0
-    
-    try:        
-        ip_volumes = config.items('IP Volume')
-        for k, v in ip_volumes:
-            if k == 'IR_IP':
-                ir_ip = v
-            elif k == 'IR_PORT':
-                ir_port = int(v)
-            else:
-                f = open(v, 'r')
-                rooms_volumes[k] = f.read()
-                f.close()
-                keystring = k.split(',')
-                if not keystring[0] in rooms:
-                    rooms.append(keystring[0])
-    except ConfigParser.NoSectionError:
-        pass
+        self.rooms_volumes = {}
+        self.rooms = []
+        self.ir_ip = ''
+        self.ir_port = 0
 
-#    print "rooms_volumes: " + str(rooms_volumes)
-#    print "rooms: " + str(rooms)
-#    print "ir ip: " + ir_ip
-#    print "ir port: " + str(ir_port)
+        try:        
+            ip_volumes = self.config.items('IP Volume')
+            for k, v in ip_volumes:
+                if k == 'IR_IP':
+                    ir_ip = v
+                elif k == 'IR_PORT':
+                    ir_port = int(v)
+                else:
+                    f = open(v, 'r')
+                    self.rooms_volumes[k] = f.read()
+                    f.close()
+                    keystring = k.split(',')
+                    if not keystring[0] in rooms:
+                        self.rooms.append(keystring[0])
+        except ConfigParser.NoSectionError:
+            pass
 
-    # port ini vars
+    #    print "rooms_volumes: " + str(rooms_volumes)
+    #    print "rooms: " + str(rooms)
+    #    print "ir ip: " + ir_ip
+    #    print "ir port: " + str(ir_port)
 
-    # get ports to use
-    ws_port = 50101
-    proxy_port = 50102
-    wmp_proxy_port = 10243
-    wmp_internal_port = 10244
-    internal_proxy_udn = None
-    try:        
-        ws_port = int(config.get('INI', 'controlpoint_port'))
-    except ConfigParser.NoOptionError:
-        pass
-    try:        
-        proxy_port = int(config.get('INI', 'proxy_port'))
-    except ConfigParser.NoOptionError:
-        pass
-    try:        
-        wmp_proxy_port = int(config.get('INI', 'wmp_proxy_port'))
-    except ConfigParser.NoOptionError:
-        pass
-    try:        
-        wmp_internal_port = int(config.get('INI', 'wmp_internal_port'))
-    except ConfigParser.NoOptionError:
-        pass
-    try:        
-        internal_proxy_udn = config.get('INI', 'internal_proxy_udn')
-    except ConfigParser.NoOptionError:
-        pass
+        # port ini vars
 
-    ###########################################################################
-    # __init__
-    ###########################################################################
+        # get ports to use
+        self.ws_port = 50101
+        self.proxy_port = 50102
+        self.wmp_proxy_port = 10243
+        self.wmp_internal_port = 10244
+        self.internal_proxy_udn = None
+        try:        
+            self.ws_port = int(self.config.get('INI', 'controlpoint_port'))
+            self.proxy_port = int(self.config.get('INI', 'proxy_port'))
+            self.wmp_proxy_port = int(self.config.get('INI', 'wmp_proxy_port'))
+            self.wmp_internal_port = int(self.config.get('INI', 'wmp_internal_port'))
+            self.internal_proxy_udn = self.config.get('INI', 'internal_proxy_udn')
+        except ConfigParser.NoOptionError:
+            pass
 
-    def __init__(self):
 
         log.debug("__init__")
 
@@ -618,12 +573,11 @@ Music/Rating                101     object.container
             self.control_point.subscribe("removed_device_event", self.on_del_device)
     #        self.control_point.subscribe('device_event', self.on_device_event)
             self.control_point.subscribe('device_event_seq', self.on_device_event_seq)
-            self.control_point.start()
 
 
         # proxy internally if it has been requested
         internal_count = 0
-        for wmpstring in self.wmpproxy:
+        for wmpstring in self.options.wmpproxy:
             wmpsplit = wmpstring.split('=')
             if len(wmpsplit) == 1:
                 wmp = wmpsplit[0]
@@ -668,12 +622,11 @@ Music/Rating                101     object.container
                     wmpcontroller2 = None
                 else:
                     startwmp = False
-                print "Proxy. Name: %s" % name
+                #print "Proxy. Name: %s" % name
                 proxy = Proxy(name, 'WMP', wmptrans, proxyuuid, self.config, None,
                               createwebserver=True, webserverurl=listen_url, wmpurl=serve_url, 
                               startwmp=startwmp, dbname=dbname, wmpudn=self.internal_proxy_udn, 
                               wmpcontroller=wmpcontroller, wmpcontroller2=wmpcontroller2)
-                proxy.start()
                 wmpcontroller = proxy.wmpcontroller                              
                 wmpcontroller2 = proxy.wmpcontroller2                              
                 '''                
@@ -779,9 +732,18 @@ Music/Rating                101     object.container
     ###########################################################################
     # webserver resource functions
     ###########################################################################
+    def start(self):
+        """
+        Start the control point, if defined, and the 
+        """
+        if self.control_point:
+            self.control_point.start()
+        for proxy in self.proxies:
+            proxy.start()
+
 
     # TODO: the data getter routines are not threadsafe, fix them
-
+            
     def make_utf8(self, text):
         if type(text) is unicode:
             text = text.encode('utf-8')
@@ -5351,7 +5313,7 @@ Music/Rating                101     object.container
             log.debug('new device fn: %s' % str(device_item.friendly_name))                                    
 
             if newmediaserver == True and not device_item.friendly_name.startswith('Proxy'):
-                for upnp in self.upnpproxy:
+                for upnp in self.options.upnpproxy:
                     if re.search(upnp, device_item.friendly_name) != None:
                         friendly = re.sub(r'[^a-zA-Z0-9_\- ]','', device_item.friendly_name)
                         name = 'Proxy UPnP ' + friendly
@@ -5367,7 +5329,7 @@ Music/Rating                101     object.container
                         self.rootids[name] = device_item.udn
                         
                 if not self.wmpfound:
-                    for wmpstring in self.wmpproxy:
+                    for wmpstring in self.options.wmpproxy:
                         wmpsplit = wmpstring.split('=')
                         if len(wmpsplit) == 1:
                             wmp = wmpsplit[0]
@@ -6229,14 +6191,60 @@ class UnknownClassError(Error):
     def __str__(self):
         return repr(self.message)
 
+def parseOptions(args):
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+
+    parser.add_option("-m", "--module", action="append", type="string", dest="modcheckmods")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug")
+    parser.add_option("-q", "--quiet", action="store_true", dest="quiet")
+    parser.add_option("-n", "--nogui", action="store_true", dest="nogui")
+    parser.add_option("-p", "--proxyonly", action="store_true", dest="proxyonly")
+    parser.add_option("-u", "--upnpproxy", action="append", type="string", dest="upnpproxies")
+    parser.add_option("-w", "--wmpproxy", action="append", type="string", dest="wmpproxies")
+
+    (options, args) = parser.parse_args(args=args)
+
+    print "Args:"
+    if options.debug:
+        print "option.debug: " + str(options.debug)
+        modcheck['all'] = True
+    if options.quiet:
+        print "option.quiet: " + str(options.quiet)
+    if options.modcheckmods:
+        for m in options.modcheckmods:
+            print "    module: " + str(m)
+            modcheck[m] = True
+    if options.nogui:
+        print "option.nogui: " + str(options.nogui)
+    if options.proxyonly:
+        print "option.proxyonly: " + str(options.proxyonly)
+
+    upnpproxy = []
+    if options.upnpproxies:
+        for u in options.upnpproxies:
+            print "    UPnP proxy: " + str(u)
+            upnpproxy.append(u)
+
+    wmpproxy = []
+    if options.wmpproxies:
+        for w in options.wmpproxies:
+            #print "    WMP proxy: " + str(w)
+            wmpproxy.append(w)
+
+    options.upnpproxy = upnpproxy
+    options.wmpproxy = wmpproxy
+    return options
+
 #def main():
 #    try:
 #        gui = ControlPointGUI()
 #    except KeyboardInterrupt, e:
 #        quit()
 def main():
-
-    web = ControlPointWeb()
+    options = parseOptions(sys.argv[1:])
+    web = ControlPointWeb(options)
+    web.start()
     reactor.main()
 #    raw_input("Press Enter to terminate")
     web._main_quit()
