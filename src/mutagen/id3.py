@@ -86,6 +86,10 @@ class ID3(DictProxy, mutagen.Metadata):
         self.__readbytes += size
         return data
 
+    def getpic(self):
+        return self.picture, self.pictureoffset, self.picturesize
+
+
     def load(self, filename, known_frames=None, translate=True):
         """Load tags from a filename.
 
@@ -108,6 +112,11 @@ class ID3(DictProxy, mutagen.Metadata):
         self.__known_frames = known_frames
         self.__fileobj = file(filename, 'rb')
         self.__filesize = getsize(filename)
+        self.frameoffset = 0
+        self.framesize = 0
+        self.picture = False
+        self.pictureoffset = 0
+        self.picturesize = 0
         try:
             try:
                 self.__load_header()
@@ -132,8 +141,21 @@ class ID3(DictProxy, mutagen.Metadata):
                 if frames is None:
                     if (2,3,0) <= self.version: frames = Frames
                     elif (2,2,0) <= self.version: frames = Frames_2_2
+                self.frameoffset = self.__fileobj.tell()
                 data = self.__fullread(self.size - 10)
                 for frame in self.__read_frames(data, frames=frames):
+                    if isinstance(frame, Frame):
+                        if frame.FrameID == 'APIC' and not self.picture:
+                            apicheader = 10+1+len(frame.mime)+1+1+len(frame.desc)+1
+                            self.pictureoffset = self.frameoffset + apicheader
+                            self.picturesize = self.framesize - apicheader
+                            self.picture = True
+                        elif frame.FrameID == 'PIC' and not self.picture:
+                            picheader = 6+1+len(frame.mime)+1+1+len(frame.desc)+1
+                            self.pictureoffset = self.frameoffset + picheader
+                            self.picturesize = self.framesize - picheader
+                            self.picture = True
+                    self.frameoffset += self.framesize
                     if isinstance(frame, Frame): self.add(frame)
                     else: self.unknown_frames.append(frame)
         finally:
@@ -304,9 +326,10 @@ class ID3(DictProxy, mutagen.Metadata):
                 size = bpi(size)
                 framedata = data[10:10+size]
                 data = data[10+size:]
+                self.framesize = 10+size
                 if size == 0: continue # drop empty frames
                 try: tag = frames[name]
-                except KeyError: 
+                except KeyError:
                     if is_valid_frame_id(name): yield header + framedata
                 else:
                     try: yield self.__load_framedata(tag, flags, framedata)
@@ -322,6 +345,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 if name.strip('\x00') == '': return
                 framedata = data[6:6+size]
                 data = data[6+size:]
+                self.framesize = 6+size
                 if size == 0: continue # drop empty frames
                 try: tag = frames[name]
                 except KeyError:
@@ -1462,7 +1486,9 @@ class COMM(TextFrame):
     _framespec = [ EncodingSpec('encoding'), StringSpec('lang', 3),
         EncodedTextSpec('desc'),
         MultiSpec('text', EncodedTextSpec('text'), sep=u'\u0000') ]
-    HashKey = property(lambda s: '%s:%s:%r' % (s.FrameID, s.desc, s.lang))
+#    HashKey = property(lambda s: '%s:%s:%r' % (s.FrameID, s.desc, s.lang))
+    # TODO: fix this to work with language but for a generic key
+    HashKey = property(lambda s: '%s' % (s.FrameID))
     def _pprint(self): return "%s=%r=%s" % (
         self.desc, self.lang, " / ".join(self.text))
 

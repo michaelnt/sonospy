@@ -172,6 +172,9 @@ class EasyID3(DictMixin, Metadata):
     _size = property(lambda s: s._id3.size,
                      lambda s, fn: setattr(s.__id3, '_size', fn))
 
+    def getpicture(self):
+        return self.__id3.getpic()
+
     def __getitem__(self, key):
         key = key.lower()
         func = dict_match(self.Get, key, self.GetFallback)
@@ -395,6 +398,18 @@ def peakgain_list(id3, key):
         keys.append("replaygain_%s_peak" % frame.desc)
     return keys
 
+def comment_get(id3, key):
+#    return "%s %s %s" % (id3[u"COMM::'eng'"].desc, id3[u"COMM::'eng'"].lang, id3[u"COMM::'eng'"].text)
+    # TODO: fix this to work with language but for a generic key
+    return id3["COMM"].text
+
+def comment_set(id3, key, value):
+    pass
+    
+def comment_delete(id3, key):
+    pass
+
+
 for frameid, key in {
     "TALB": "album",
     "TBPM": "bpm",
@@ -438,6 +453,8 @@ EasyID3.RegisterKey("website", website_get, website_set, website_delete)
 EasyID3.RegisterKey(
     "replaygain_*_gain", gain_get, gain_set, gain_delete, peakgain_list)
 EasyID3.RegisterKey("replaygain_*_peak", peak_get, peak_set, peak_delete)
+
+EasyID3.RegisterKey("comment", comment_get, comment_set, comment_delete)
 
 # At various times, information for this came from
 # http://musicbrainz.org/docs/specs/metadata_tags.html

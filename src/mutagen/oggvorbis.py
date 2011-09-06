@@ -71,19 +71,77 @@ class OggVorbisInfo(object):
     def pprint(self):
         return "Ogg Vorbis, %.2f seconds, %d bps" % (self.length, self.bitrate)
 
+class OggVCommentData(object):
+    def __init__(self, offset, packet_start, packet_end):
+        self.offset = offset
+        self.packet_start = packet_start
+        self.packet_end = packet_end
+    def __repr__(self):
+        attrs = ['offset', 'packet_start', 'packet_end']
+        values = ["%s=%r" % (attr, getattr(self, attr)) for attr in attrs]
+        return "<%s %s>" % (type(self).__name__, " ".join(values))
+
 class OggVCommentDict(VCommentDict):
     """Vorbis comments embedded in an Ogg bitstream."""
 
     def __init__(self, fileobj, info):
-        pages = []
+        self.pages = []
+        self.pages_data = []
+        self.sections = []
         complete = False
         while not complete:
             page = OggPage(fileobj)
             if page.serial == info.serial:
-                pages.append(page)
+                self.pages.append(page)
+#                print page.packets
+                packet_start = page.offset + 27 + page.segments
+                packet_end = packet_start + page.lacings[0] - 1
+#                print page
+                page_data = OggVCommentData(page.offset, packet_start, packet_end)
+#                print page_data
+                self.pages_data.append(page_data)
                 complete = page.complete or (len(page.packets) > 1)
-        data = OggPage.to_packets(pages)[0][7:] # Strip off "\x03vorbis".
+        data = OggPage.to_packets(self.pages)[0][7:] # Strip off "\x03vorbis".
+#        print data
         super(OggVCommentDict, self).__init__(data)
+        
+        picture_found = False
+        for (tag, tagvalue), (offset, size) in zip(self, self.tag_data):
+            # the offset is relative, calculate the absolute offset - we need to add the absolute page offset for the first page and the stripped off "\x03vorbis"
+            abs_offset = offset + self.pages_data[0].packet_start + 7
+            if tag == 'METADATA_BLOCK_PICTURE' and not picture_found:
+                picture_found = True
+#                print "tag: %s, offset: %s, abs offset: %s, size: %s" % (tag, offset, abs_offset, size)
+                # find which page picture starts in
+                length = count = 0
+                for pd in self.pages_data:
+                    data_length = pd.packet_end - pd.packet_start + 1
+                    length += data_length
+                    if offset <= length:
+                        # picture starts on this page
+                        tag_len = len(tag) + 1
+                        data_start = abs_offset + tag_len
+                        self.sections.append(data_start)
+                        packet_left = pd.packet_end - data_start + 1
+                        if packet_left >= size:
+                            data_end = size
+                            self.sections.append(data_end)
+                        else:
+                            self.sections.append(packet_left)
+                            remaining = size - packet_left - tag_len
+                            for i in range(count+1, len(self.pages_data)):
+                                data_start = self.pages_data[i].packet_start
+                                self.sections.append(self.pages_data[i].packet_start)
+                                packet_length = self.pages_data[i].packet_end - self.pages_data[i].packet_start + 1
+                                if packet_length >= remaining:
+                                    self.sections.append(remaining)
+                                    break
+                                else:
+                                    self.sections.append(packet_length)
+                                    remaining -= packet_length
+#                        print self.sections
+                        break
+                    count += 1
 
     def _inject(self, fileobj):
         """Write tag data into the Vorbis comment packet/page."""

@@ -62,9 +62,11 @@ class OggPage(object):
     sequence = 0
     offset = None
     complete = True
+    segments = 0
 
     def __init__(self, fileobj=None):
         self.packets = []
+        self.lacings = []
 
         if fileobj is None:
             return
@@ -77,7 +79,7 @@ class OggPage(object):
 
         try:
             (oggs, self.version, self.__type_flags, self.position,
-             self.serial, self.sequence, crc, segments) = struct.unpack(
+             self.serial, self.sequence, crc, self.segments) = struct.unpack(
                 "<4sBBqIIiB", header)
         except struct.error:
             raise error("unable to read full header; got %r" % header)
@@ -90,21 +92,20 @@ class OggPage(object):
             raise error("version %r unsupported" % self.version)
 
         total = 0
-        lacings = []
-        lacing_bytes = fileobj.read(segments)
-        if len(lacing_bytes) != segments:
-            raise error("unable to read %r lacing bytes" % segments)
+        lacing_bytes = fileobj.read(self.segments)
+        if len(lacing_bytes) != self.segments:
+            raise error("unable to read %r lacing bytes" % self.segments)
         for c in map(ord, lacing_bytes):
             total += c
             if c < 255:
-                lacings.append(total)
+                self.lacings.append(total)
                 total = 0
         if total:
-            lacings.append(total)
+            self.lacings.append(total)
             self.complete = False
 
-        self.packets = map(fileobj.read, lacings)
-        if map(len, self.packets) != lacings:
+        self.packets = map(fileobj.read, self.lacings)
+        if map(len, self.packets) != self.lacings:
             raise error("unable to read full data")
 
     def __eq__(self, other):

@@ -406,12 +406,20 @@ class ContentDescriptionObject(BaseObject):
         data = struct.pack("<HHHHH", *map(len, texts)) + "".join(texts)
         return self.GUID + struct.pack("<Q", 24 + len(data)) + data
 
+picture_found = False
+picture_processed = False
+picture_offset = 0
+picture_object_offset = 0
+picture_length = 0
 
 class ExtendedContentDescriptionObject(BaseObject):
     """Extended content description."""
     GUID = "\x40\xA4\xD0\xD2\x07\xE3\xD2\x11\x97\xF0\x00\xA0\xC9\x5E\xA8\x50"
 
     def parse(self, asf, data, fileobj, size):
+        global picture_found
+        global picture_object_offset
+        global picture_length
         super(ExtendedContentDescriptionObject, self).parse(asf, data, fileobj, size)
         asf.extended_content_description_obj = self
         num_attributes, = struct.unpack("<H", data[0:2])
@@ -423,6 +431,10 @@ class ExtendedContentDescriptionObject(BaseObject):
             pos += name_length
             value_type, value_length = struct.unpack("<HH", data[pos:pos+4])
             pos += 4
+            if name == 'WM/Picture' and not picture_found:
+                picture_length, = struct.unpack("<H", data[pos+1:pos+3])
+                picture_object_offset = pos + value_length - picture_length
+                picture_found = True
             value = data[pos:pos+value_length]
             pos += value_length
             attr = _attribute_types[value_type](data=value)
@@ -638,6 +650,13 @@ class ASF(FileType):
             fileobj.close()
 
     def __read_file(self, fileobj):
+
+        global picture_found
+        global picture_processed
+        global picture_offset
+        global picture_object_offset
+        global picture_length
+
         header = fileobj.read(30)
         if len(header) != 30 or header[:16] != HeaderObject.GUID:
             raise ASFHeaderError, "Not an ASF file."
@@ -651,7 +670,14 @@ class ASF(FileType):
         self.size, self.num_objects = struct.unpack("<QL", header[16:28])
         self.objects = []
         for i in range(self.num_objects):
+            offset = fileobj.tell()
             self.__read_object(fileobj)
+            if picture_found and not picture_processed:
+                picture_offset = offset + 24 + picture_object_offset
+                picture_processed = True
+
+    def get_picture(self):
+        return picture_found, picture_offset, picture_length
 
     def __read_object(self, fileobj):
         guid, size = struct.unpack("<16sQ", fileobj.read(24))

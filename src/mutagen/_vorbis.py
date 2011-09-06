@@ -80,12 +80,14 @@ class VComment(mutagen.Metadata, list):
         but are not used in FLAC Vorbis comment blocks.
 
         """
+        self.tag_data = []
         try:
             vendor_length = cdata.uint_le(fileobj.read(4))
             self.vendor = fileobj.read(vendor_length).decode('utf-8', errors)
             count = cdata.uint_le(fileobj.read(4))
             for i in range(count):
                 length = cdata.uint_le(fileobj.read(4))
+                data_offset = fileobj.tell()
                 try: string = fileobj.read(length).decode('utf-8', errors)
                 except (OverflowError, MemoryError):
                     raise error("cannot read %d bytes, too large" % length)
@@ -101,7 +103,9 @@ class VComment(mutagen.Metadata, list):
                 except UnicodeEncodeError:
                     raise VorbisEncodingError, "invalid tag name %r" % tag
                 else:
-                    if is_valid_key(tag): self.append((tag, value))
+                    if is_valid_key(tag): 
+                        self.append((tag, value))
+                        self.tag_data.append((data_offset, length))     # the offset is relative to the passed in fileobj, not the file
             if framing and not ord(fileobj.read(1)) & 0x01:
                 raise VorbisUnsetFrameError("framing bit was unset")
         except (cdata.error, TypeError):

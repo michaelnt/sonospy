@@ -671,6 +671,25 @@ class FLAC(FileType):
             fileobj.read(size)
         return fileobj.tell()
 
+    def find_picture_offset(self):
+        fileobj = open(self.filename, 'rb')
+        self.__check_header(fileobj)
+        byte = 0x00
+        while True:
+            byte = ord(fileobj.read(1))
+            code = byte & 0x7F
+            size = to_int_be(fileobj.read(3))
+            if code == Picture.code:
+                itype, length = struct.unpack('>2I', fileobj.read(8))
+                mime = fileobj.read(length).decode('UTF-8', 'replace')
+                length, = struct.unpack('>I', fileobj.read(4))
+                desc = fileobj.read(length).decode('UTF-8', 'replace')
+                (width, height, depth, colors, length) = struct.unpack('>5I', fileobj.read(20))
+                offset = fileobj.tell()
+                fileobj.close()
+                return offset, length
+            fileobj.read(size)
+
     def __check_header(self, fileobj):
         size = 4
         header = fileobj.read(4)
