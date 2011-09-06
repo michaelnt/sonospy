@@ -1253,8 +1253,7 @@ class CherrypyAdapter(AdapterInterface):
     """
 
     def setup(self, server_name, host, port, app_callback):
-#        from cherrypy import wsgiserver
-        from cherrypy import CherryPyWSGIServer
+        from cherrypy.wsgiserver import CherryPyWSGIServer
 #        self._server = wsgiserver.CherryPyWSGIServer((host, port),
         self._server = CherryPyWSGIServer((host, port),
                                            app_callback,
