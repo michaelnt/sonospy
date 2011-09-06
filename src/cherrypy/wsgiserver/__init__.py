@@ -547,23 +547,40 @@ class HTTPRequest(object):
                 self.simple_response("413 Request Entity Too Large")
             return
     
+    def chunks(self, l, n):
+        """ Yield successive n-sized chunks from l.
+        """
+        for i in xrange(0, len(l), n):
+            yield l[i:i+n]
+
     def _respond(self):
+
+        import time
+        from brisa.core import log
+        log.debug("write start: %.3f" % time.time())
+    
         if self.chunked_read:
             if not self.decode_chunked():
                 self.close_connection = True
                 return
         
         response = self.wsgi_app(self.environ, self.start_response)
+        
         try:
-            for chunk in response:
-                # "The start_response callable must not actually transmit
-                # the response headers. Instead, it must store them for the
-                # server or gateway to transmit only after the first
-                # iteration of the application return value that yields
-                # a NON-EMPTY string, or upon the application's first
-                # invocation of the write() callable." (PEP 333)
-                if chunk:
+            # HACK - if a string is passed, we don't want to send a char at a time
+            if isinstance(response, str):
+                for chunk in self.chunks(response, 8192):
                     self.write(chunk)
+            else:
+                for chunk in response:
+                    # "The start_response callable must not actually transmit
+                    # the response headers. Instead, it must store them for the
+                    # server or gateway to transmit only after the first
+                    # iteration of the application return value that yields
+                    # a NON-EMPTY string, or upon the application's first
+                    # invocation of the write() callable." (PEP 333)
+                    if chunk:
+                        self.write(chunk)
         finally:
             if hasattr(response, "close"):
                 response.close()
@@ -573,6 +590,8 @@ class HTTPRequest(object):
             self.send_headers()
         if self.chunked_write:
             self.wfile.sendall("0\r\n\r\n")
+
+        log.debug("write end: %.3f" % time.time())
     
     def simple_response(self, status, msg=""):
         """Write a simple response back to the client."""
@@ -1466,6 +1485,8 @@ class CherryPyWSGIServer(object):
     on server start and used in the SSL context for the listening socket.
     """
     
+    app = "Sonospy"
+    
     protocol = "HTTP/1.1"
     _bind_addr = "127.0.0.1"
     version = "CherryPy/3.1.2"
@@ -1657,7 +1678,8 @@ class CherryPyWSGIServer(object):
             # SERVER_SOFTWARE is common for IIS. It's also helpful for
             # us to pass a default value for the "Server" response header.
             if environ.get("SERVER_SOFTWARE") is None:
-                environ["SERVER_SOFTWARE"] = "%s WSGI Server" % self.version
+#                environ["SERVER_SOFTWARE"] = "%s WSGI Server" % self.version
+                environ["SERVER_SOFTWARE"] = "%s %s WSGI Server" % (self.app, self.version)
             # set a non-standard environ entry so the WSGI app can know what
             # the *real* server protocol is (and what features to support).
             # See http://www.faqs.org/rfcs/rfc2145.html.
