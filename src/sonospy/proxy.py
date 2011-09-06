@@ -144,7 +144,7 @@ class Proxy(object):
         error = None
         if self.dbspec != None:
             if not os.access(self.dbspec, os.R_OK):
-                raise ProxyError("Unable to access database file")
+                raise ProxyError("Unable to access database file %s" % self.dbspec)
             else:
                 try:
                     db = sqlite3.connect(self.dbspec, check_same_thread = False)

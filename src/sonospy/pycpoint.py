@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # pycpoint
 #
@@ -105,7 +105,7 @@ import datetime
     
 from brisa.upnp.control_point.service import Service, SubscribeRequest
 
-from proxy import Proxy
+from proxy import Proxy, ProxyError
 
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
@@ -669,10 +669,14 @@ Music/Rating                101     object.container
                 else:
                     startwmp = False
                 print "Proxy. Name: %s" % name
-                proxy = Proxy(name, 'WMP', wmptrans, proxyuuid, self.config, None,
-                              createwebserver=True, webserverurl=listen_url, wmpurl=serve_url, 
-                              startwmp=startwmp, dbname=dbname, wmpudn=self.internal_proxy_udn, 
-                              wmpcontroller=wmpcontroller, wmpcontroller2=wmpcontroller2)
+                try:
+                    proxy = Proxy(name, 'WMP', wmptrans, proxyuuid, self.config, None,
+                                  createwebserver=True, webserverurl=listen_url, wmpurl=serve_url, 
+                                  startwmp=startwmp, dbname=dbname, wmpudn=self.internal_proxy_udn, 
+                                  wmpcontroller=wmpcontroller, wmpcontroller2=wmpcontroller2)
+                except ProxyError as e:
+                    print "%s" % e
+                    sys.exit(1)
                 proxy.start()
                 wmpcontroller = proxy.wmpcontroller                              
                 wmpcontroller2 = proxy.wmpcontroller2                              
