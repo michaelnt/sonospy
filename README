@@ -12,6 +12,18 @@ Control Point QuickStart
 ------------------------
 git clone https://github.com/henkelis/sonospy.git
 wget http://www.web2py.com/examples/static/web2py_src.zip
+unzip web2py_src.zip
+sudo python setup.py develop
+./sonospy_web
+
+If you don't want a system wide install or don't have root access
+-----------------------------------------------------------------
+git clone https://github.com/henkelis/sonospy.git
+wget http://www.web2py.com/examples/static/web2py_src.zip
+unzip web2py_src.zip
+virtualenv py
+. py/bin/activate
+python setup.py develop
 ./sonospy_web
 
 Dependencies in this order (links correct at time of writing):
